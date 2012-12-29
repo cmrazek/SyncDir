@@ -273,6 +273,7 @@ namespace SyncDirCmd
 		{
 			try
 			{
+				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
 
 				var leftPath = state.LeftAbsPath;
@@ -308,15 +309,18 @@ namespace SyncDirCmd
 				foreach (var fileName in leftFiles)
 				{
 					_numFilesAnalyzed++;
+
+					var relFileName = state.GetRelFileName(fileName);
+					var leftAbsFileName = state.GetLeftAbsFileName(fileName);
+					var rightAbsFileName = state.GetRightAbsFileName(fileName);
+
 					if (!rightFiles.Any(f => f.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
 					{
 						try
 						{
 							// File does not exist on the right.
-							var leftAbsFileName = state.GetLeftAbsFileName(fileName);
-							var rightAbsFileName = state.GetRightAbsFileName(fileName);
 							var leftInfo = new FileInfo(leftAbsFileName);
-							if (CopyFile(leftAbsFileName, rightAbsFileName, "does not exist in mirror"))
+							if (CopyFile(relFileName, leftAbsFileName, rightAbsFileName, "does not exist in mirror"))
 							{
 								state.FileDb.UpdateFile(state.GetRelFileName(fileName), leftInfo);
 							}
@@ -329,10 +333,6 @@ namespace SyncDirCmd
 					else
 					{
 						// File exists in both locations.  Check to see if they're the same.
-						var leftAbsFileName = state.GetLeftAbsFileName(fileName);
-						var rightAbsFileName = state.GetRightAbsFileName(fileName);
-						var relFileName = state.GetRelFileName(fileName);
-
 						var leftInfo = new FileInfo(leftAbsFileName);
 						var rightInfo = new FileInfo(rightAbsFileName);
 
@@ -356,7 +356,7 @@ namespace SyncDirCmd
 
 						if (copy)
 						{
-							if (CopyFile(leftAbsFileName, rightAbsFileName, reason))
+							if (CopyFile(relFileName, leftAbsFileName, rightAbsFileName, reason))
 							{
 								state.FileDb.UpdateFile(relFileName, leftInfo);
 							}
@@ -383,7 +383,7 @@ namespace SyncDirCmd
 						reason = "file does not exist in master";
 					}
 
-					if (DeleteFile(state.GetRightAbsFileName(fileName), reason))
+					if (DeleteFile(state.GetRelFileName(fileName), state.GetRightAbsFileName(fileName), reason))
 					{
 						state.FileDb.DeleteFile(state.GetRelFileName(fileName));
 					}
@@ -395,7 +395,7 @@ namespace SyncDirCmd
 					if (!rightDirs.Any(f => f.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
 					{
 						// Directory does not exist on the right.
-						CreateDir(state.GetRightAbsFileName(dirName), "new directory");
+						CreateDir(state.GetRelFileName(dirName), state.GetRightAbsFileName(dirName), "new directory");
 					}
 					else
 					{
@@ -408,7 +408,7 @@ namespace SyncDirCmd
 				// Find deleted directories.
 				foreach (var dirName in (from r in rightDirs where !leftDirs.Any(l => l.Equals(r, StringComparison.OrdinalIgnoreCase)) select r))
 				{
-					if (DeleteDir(state.GetRightAbsFileName(dirName), "directory does not exist in master"))
+					if (DeleteDir(state.GetRelFileName(dirName), state.GetRightAbsFileName(dirName), "directory does not exist in master"))
 					{
 						state.FileDb.DeleteFilesInDir(state.GetRelFileName(dirName));
 					}
@@ -435,6 +435,7 @@ namespace SyncDirCmd
 		{
 			try
 			{
+				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
 
 				string[] leftFiles, leftDirs, rightFiles, rightDirs;
@@ -475,14 +476,14 @@ namespace SyncDirCmd
 						// File is on left only.
 						if (state.FileDb.FileExists(relFileName))
 						{
-							if (DeleteFile(leftAbsFileName, "file deleted on right"))
+							if (DeleteFile(relFileName, leftAbsFileName, "file deleted on right"))
 							{
 								state.FileDb.DeleteFile(relFileName);
 							}
 						}
 						else
 						{
-							if (CopyFile(leftAbsFileName, rightAbsFileName, "file new on left"))
+							if (CopyFile(relFileName, leftAbsFileName, rightAbsFileName, "file new on left"))
 							{
 								state.FileDb.UpdateFile(relFileName, new FileInfo(leftAbsFileName));
 							}
@@ -501,7 +502,7 @@ namespace SyncDirCmd
 						if (leftChanged && !rightChanged)
 						{
 							// User updated the left file.
-							if (CopyFile(leftAbsFileName, rightAbsFileName, string.Concat("left file: ", leftReason)))
+							if (CopyFile(relFileName, leftAbsFileName, rightAbsFileName, string.Concat("left file: ", leftReason)))
 							{
 								state.FileDb.UpdateFile(relFileName, leftInfo);
 							}
@@ -509,7 +510,7 @@ namespace SyncDirCmd
 						else if (!leftChanged && rightChanged)
 						{
 							// User updated the right file.
-							if (CopyFile(rightAbsFileName, leftAbsFileName, string.Concat("right file: ", rightReason)))
+							if (CopyFile(relFileName, rightAbsFileName, leftAbsFileName, string.Concat("right file: ", rightReason)))
 							{
 								state.FileDb.UpdateFile(relFileName, rightInfo);
 							}
@@ -523,7 +524,7 @@ namespace SyncDirCmd
 								if (leftInfo.LastWriteTime > rightInfo.LastWriteTime)
 								{
 									// Left file is newer.
-									if (CopyFile(leftAbsFileName, rightAbsFileName, "left file modified date is newer"))
+									if (CopyFile(relFileName, leftAbsFileName, rightAbsFileName, "left file modified date is newer"))
 									{
 										state.FileDb.UpdateFile(relFileName, leftInfo);
 									}
@@ -531,7 +532,7 @@ namespace SyncDirCmd
 								else if (leftInfo.LastWriteTime < rightInfo.LastWriteTime)
 								{
 									// Right file is newer.
-									if (CopyFile(rightAbsFileName, leftAbsFileName, "right file modified date is newer"))
+									if (CopyFile(relFileName, rightAbsFileName, leftAbsFileName, "right file modified date is newer"))
 									{
 										state.FileDb.UpdateFile(relFileName, rightInfo);
 									}
@@ -565,14 +566,14 @@ namespace SyncDirCmd
 
 					if (state.FileDb.FileExists(relFileName))
 					{
-						if (DeleteFile(rightAbsFileName, "file deleted on left"))
+						if (DeleteFile(relFileName, rightAbsFileName, "file deleted on left"))
 						{
 							state.FileDb.DeleteFile(relFileName);
 						}
 					}
 					else
 					{
-						if (CopyFile(rightAbsFileName, leftAbsFileName, "file new on right"))
+						if (CopyFile(relFileName, rightAbsFileName, leftAbsFileName, "file new on right"))
 						{
 							state.FileDb.UpdateFile(relFileName, new FileInfo(rightAbsFileName));
 						}
@@ -589,14 +590,14 @@ namespace SyncDirCmd
 						// On left side only.
 						if (state.FileDb.FileExistsInDir(relDirName))
 						{
-							if (DeleteDir(state.GetLeftAbsFileName(dirName), "directory on left deleted by user"))
+							if (DeleteDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on left deleted by user"))
 							{
 								state.FileDb.DeleteFilesInDir(relDirName);
 							}
 						}
 						else
 						{
-							if (CreateDir(state.GetRightAbsFileName(dirName), "directory on right new"))
+							if (CreateDir(relDirName, state.GetRightAbsFileName(dirName), "directory on right new"))
 							{
 								BothDir(new DirState(state, dirName));
 							}
@@ -618,14 +619,14 @@ namespace SyncDirCmd
 
 					if (state.FileDb.FileExistsInDir(relDirName))
 					{
-						if (DeleteDir(state.GetRightAbsFileName(dirName), "directory on right deleted by user"))
+						if (DeleteDir(relDirName, state.GetRightAbsFileName(dirName), "directory on right deleted by user"))
 						{
 							state.FileDb.DeleteFilesInDir(relDirName);
 						}
 					}
 					else
 					{
-						if (CreateDir(state.GetLeftAbsFileName(dirName), "directory on left new"))
+						if (CreateDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on left new"))
 						{
 							BothDir(new DirState(state, dirName));
 						}
@@ -638,12 +639,12 @@ namespace SyncDirCmd
 			}
 		}
 
-		private bool CopyFile(string srcFileName, string dstFileName, string reason)
+		private bool CopyFile(string relFileName, string srcFileName, string dstFileName, string reason)
 		{
 			try 
 			{
-				_rep.WriteOperation("Copy File", new ReportDetail("From File Name", srcFileName), new ReportDetail("To File Name", dstFileName), new ReportDetail("Reason", reason));
-				Cout.WriteLine(Cout.UnimportantColor, string.Format("Copy File: {0} -> {1}", srcFileName, dstFileName));
+				_rep.WriteOperation("Copy File: " + relFileName, new ReportDetail("From File Name", srcFileName), new ReportDetail("To File Name", dstFileName), new ReportDetail("Reason", reason));
+				Cout.WriteLine(Cout.ImportantColor, string.Concat("Copy File: ", relFileName));
 
 				if (!_test) File.Copy(srcFileName, dstFileName, true);
 				_numFilesCopied++;
@@ -656,14 +657,14 @@ namespace SyncDirCmd
 			}
 		}
 
-		private bool CreateDir(string path, string reason)
+		private bool CreateDir(string relPath, string absPath, string reason)
 		{
 			try
 			{
-				_rep.WriteOperation("Create Directory", new ReportDetail("Path", path), new ReportDetail("Reason", reason));
-				Cout.WriteLine(Cout.UnimportantColor, string.Concat("Create Dir: ", path));
+				_rep.WriteOperation("Create Directory: " + relPath, new ReportDetail("Path", absPath), new ReportDetail("Reason", reason));
+				Cout.WriteLine(Cout.ImportantColor, string.Concat("Create Dir: ", relPath));
 
-				if (!_test) Directory.CreateDirectory(path);
+				if (!_test) Directory.CreateDirectory(absPath);
 				_numDirsCreated++;
 				return true;
 			}
@@ -674,14 +675,14 @@ namespace SyncDirCmd
 			}
 		}
 
-		private bool DeleteFile(string fileName, string reason)
+		private bool DeleteFile(string relFileName, string absFileName, string reason)
 		{
 			try
 			{
-				_rep.WriteOperation("Delete File", new ReportDetail("File Name", fileName), new ReportDetail("Reason", reason));
-				Cout.WriteLine(Cout.UnimportantColor, string.Concat("Delete File: ", fileName));
+				_rep.WriteOperation("Delete File: " + relFileName, new ReportDetail("File Name", absFileName), new ReportDetail("Reason", reason));
+				Cout.WriteLine(Cout.ImportantColor, string.Concat("Delete File: ", relFileName));
 
-				if (!_test) File.Delete(fileName);
+				if (!_test) File.Delete(absFileName);
 				_numFilesDeleted++;
 				return true;
 			}
@@ -692,14 +693,14 @@ namespace SyncDirCmd
 			}
 		}
 
-		private bool DeleteDir(string path, string reason)
+		private bool DeleteDir(string relPath, string absPath, string reason)
 		{
 			try
 			{
-				_rep.WriteOperation("Delete Directory", new ReportDetail("Path", path), new ReportDetail("Reason", reason));
-				Cout.WriteLine(Cout.UnimportantColor, string.Concat("Delete Dir: ", path));
+				_rep.WriteOperation("Delete Directory: " + relPath, new ReportDetail("Path", absPath), new ReportDetail("Reason", reason));
+				Cout.WriteLine(Cout.ImportantColor, string.Concat("Delete Dir: ", relPath));
 
-				if (!_test) DeleteDir_Sub(path);
+				if (!_test) DeleteDir_Sub(absPath);
 				return true;
 			}
 			catch (Exception ex)
