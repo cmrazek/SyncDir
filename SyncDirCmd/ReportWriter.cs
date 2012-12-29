@@ -59,13 +59,14 @@ namespace SyncDirCmd
 			_rep.WriteLine(".headerValue { }");
 			_rep.WriteLine(".infoItem { }");
 			_rep.WriteLine(".errorItem { color: #ffffff; background-color: #ff0000; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
-			_rep.WriteLine(".errorException { font-family: Consolas, Courier New; background-color: #ffffff; color: #000000; }");
+			_rep.WriteLine(".errorException { font-family: Consolas, Courier New; color: #ffeeee; }");
 			_rep.WriteLine(".warningItem { color: #ffffff; background-color: #ff8800; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
 			_rep.WriteLine(".operationItem { font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
 			_rep.WriteLine(".operationDetailTable { margin-left: 20px; }");
 			_rep.WriteLine(".operationDetailItem { }");
 			_rep.WriteLine(".operationDetailLabel { display: inline-block; font-weight: normal; width: 180px; }");
 			_rep.WriteLine(".operationDetailValue { font-weight: normal; }");
+			_rep.WriteLine(".syncStart { background-color: #ffffff; }");
 			_rep.WriteLine(".data { font-family: Consolas, Courier New; background-color: #ffffff; }");
 			_rep.WriteLine(".summaryTable { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; width: 100%; }");
 			_rep.WriteLine(".summaryItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
@@ -129,7 +130,14 @@ namespace SyncDirCmd
 
 		public void WriteOperation(string message, params ReportDetail[] details)
 		{
-			_rep.Write("<div class=\"operationItem\">");
+			WriteOperation(message, null, details);
+		}
+
+		private void WriteOperation(string message, string itemClasses, params ReportDetail[] details)
+		{
+			_rep.Write("<div class=\"operationItem");
+			if (!string.IsNullOrEmpty(itemClasses)) _rep.Write(" " + itemClasses);
+			_rep.Write("\">");
 			_rep.Write(HttpUtility.HtmlEncode(message));
 			if (details != null && details.Length > 0)
 			{
@@ -145,6 +153,13 @@ namespace SyncDirCmd
 				_rep.Write("</table>");
 			}
 			_rep.WriteLine("</div>");
+		}
+
+		public void WriteSyncStart(string message, string leftDirName, string leftDir, string rightDirName, string rightDir)
+		{
+			WriteOperation(message, "syncStart",
+				new ReportDetail(leftDirName, leftDir),
+				new ReportDetail(rightDirName, rightDir));
 		}
 
 		public void StartSummary()

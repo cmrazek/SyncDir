@@ -9,8 +9,7 @@ namespace SyncDirCmd
 {
 	public class FileDb
 	{
-		private string _leftBasePath = "";
-		private string _rightBasePath = "";
+		private string _basePath = "";
 		private string _dbFileName = "";
 		private Dictionary<string, FileEntry> _files = new Dictionary<string, FileEntry>();
 
@@ -22,11 +21,10 @@ namespace SyncDirCmd
 			public bool DeleteMe { get; set; }
 		}
 
-		public FileDb(string leftBasePath, string rightBasePath)
+		public FileDb(string basePath)
 		{
-			if (string.IsNullOrWhiteSpace(leftBasePath) || string.IsNullOrWhiteSpace(rightBasePath)) throw new ArgumentNullException();
-			_leftBasePath = leftBasePath;
-			_rightBasePath = rightBasePath;
+			if (string.IsNullOrWhiteSpace(basePath)) throw new ArgumentNullException();
+			_basePath = basePath;
 			FindDbFile();
 		}
 
@@ -35,7 +33,6 @@ namespace SyncDirCmd
 			var dataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Res.AppNameIdent);
 			if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
 
-			var header = string.Concat(_leftBasePath, "|", _rightBasePath);
 			var found = false;
 
 			foreach (var fileName in Directory.GetFiles(dataPath, "*.dat"))
@@ -44,7 +41,7 @@ namespace SyncDirCmd
 				{
 					// First line of file contains the base path.
 					var fileBasePath = sr.ReadLine();
-					if (fileBasePath.Equals(header, StringComparison.OrdinalIgnoreCase))
+					if (fileBasePath.Equals(_basePath, StringComparison.OrdinalIgnoreCase))
 					{
 						_dbFileName = fileName;
 						LoadDbFile(sr);
@@ -60,14 +57,9 @@ namespace SyncDirCmd
 			}
 		}
 
-		public string LeftBasePath
+		public string BasePath
 		{
-			get { return _leftBasePath; }
-		}
-
-		public string RightBasePath
-		{
-			get { return _rightBasePath; }
+			get { return _basePath; }
 		}
 
 		private void LoadDbFile(StreamReader sr)
@@ -129,9 +121,7 @@ namespace SyncDirCmd
 			if (string.IsNullOrWhiteSpace(_dbFileName)) throw new InvalidOperationException("No database file name specified.");
 
 			var sb = new StringBuilder();
-			sb.Append(_leftBasePath);
-			sb.Append("|");
-			sb.AppendLine(_rightBasePath);
+			sb.AppendLine(_basePath);
 
 			foreach (var key in _files.Keys)
 			{
@@ -160,17 +150,27 @@ namespace SyncDirCmd
 			File.WriteAllText(_dbFileName, sb.ToString());
 		}
 
-		public void UpdateFile(string relPathName, FileInfo fi)
+		public void UpdateFile(string relPathName)
 		{
-			FileEntry entry;
-			if (!_files.TryGetValue(relPathName.ToLower(), out entry))
+			var absFileName = Path.Combine(_basePath, relPathName);
+			if (File.Exists(absFileName))
 			{
-				_files[relPathName.ToLower()] = entry = new FileEntry();
-				entry.FileName = relPathName;
-			}
+				var fi = new FileInfo(absFileName);
 
-			entry.Modified = fi.LastWriteTime;
-			entry.Size = fi.Length;
+				FileEntry entry;
+				if (!_files.TryGetValue(relPathName.ToLower(), out entry))
+				{
+					_files[relPathName.ToLower()] = entry = new FileEntry();
+					entry.FileName = relPathName;
+				}
+
+				entry.Modified = fi.LastWriteTime;
+				entry.Size = fi.Length;
+			}
+			else
+			{
+				_files.Remove(relPathName.ToLower());
+			}
 		}
 
 		public bool FileChanged(string relPathName, FileInfo fi, ref string reason)

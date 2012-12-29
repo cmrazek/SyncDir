@@ -8,27 +8,29 @@ namespace SyncDirCmd
 {
 	class DirState
 	{
-		public FileDb FileDb { get; set; }
+		public FileDb LeftDb { get; set; }
+		public FileDb RightDb { get; set; }
 		public string RelPath { get; set; }
 		public string LeftAbsPath { get; set; }
 		public string RightAbsPath { get; set; }
 
-		public DirState(FileDb fileDb, string relPath)
+		public DirState(FileDb leftDb, FileDb rightDb, string relPath)
 		{
-			if (fileDb == null) throw new ArgumentNullException();
+			if (leftDb == null || rightDb == null) throw new ArgumentNullException();
 
-			FileDb = fileDb;
+			LeftDb = leftDb;
+			RightDb = rightDb;
 			RelPath = relPath;
 
 			if (!string.IsNullOrEmpty(RelPath))
 			{
-				LeftAbsPath = Path.Combine(FileDb.LeftBasePath, RelPath);
-				RightAbsPath = Path.Combine(FileDb.RightBasePath, RelPath);
+				LeftAbsPath = Path.Combine(LeftDb.BasePath, RelPath);
+				RightAbsPath = Path.Combine(RightDb.BasePath, RelPath);
 			}
 			else
 			{
-				LeftAbsPath = FileDb.LeftBasePath;
-				RightAbsPath = FileDb.RightBasePath;
+				LeftAbsPath = LeftDb.BasePath;
+				RightAbsPath = RightDb.BasePath;
 			}
 		}
 
@@ -36,21 +38,22 @@ namespace SyncDirCmd
 		{
 			if (parent == null || string.IsNullOrEmpty(subDir)) throw new ArgumentNullException();
 
-			FileDb = parent.FileDb;
+			LeftDb = parent.LeftDb;
+			RightDb = parent.RightDb;
 			RelPath = !string.IsNullOrEmpty(parent.RelPath) ? Path.Combine(parent.RelPath, subDir) : subDir;
 
-			LeftAbsPath = Path.Combine(FileDb.LeftBasePath, RelPath);
-			RightAbsPath = Path.Combine(FileDb.RightBasePath, RelPath);
+			LeftAbsPath = Path.Combine(LeftDb.BasePath, RelPath);
+			RightAbsPath = Path.Combine(RightDb.BasePath, RelPath);
 		}
 
 		public string LeftBasePath
 		{
-			get { return FileDb.LeftBasePath; }
+			get { return LeftDb.BasePath; }
 		}
 
 		public string RightBasePath
 		{
-			get { return FileDb.RightBasePath; }
+			get { return RightDb.BasePath; }
 		}
 
 		public string GetLeftAbsFileName(string fileName)

@@ -46,6 +46,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgumentException.cs" />
+    <Compile Include="Config.cs">
+      <DependentUpon>Config.xsd</DependentUpon>
+    </Compile>
     <Compile Include="Cout.cs" />
     <Compile Include="DirState.cs" />
     <Compile Include="FileDb.cs" />
@@ -67,6 +70,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Config.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Generate.bat" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
