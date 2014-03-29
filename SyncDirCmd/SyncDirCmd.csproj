@@ -61,6 +61,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Res.resx</DependentUpon>
     </Compile>
+    <Compile Include="SyncEx.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Res.resx">

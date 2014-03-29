@@ -30,6 +30,7 @@
 			<xs:element name="left" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			<xs:element name="right" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			<xs:element name="master" type="Master" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="ignore" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
 	</xs:complexType>
 

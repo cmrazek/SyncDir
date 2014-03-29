@@ -123,4 +123,7 @@
   <data name="AppNameIdent" xml:space="preserve">
     <value>SyncDirCmd</value>
   </data>
+  <data name="ReportDirName" xml:space="preserve">
+    <value>Reports</value>
+  </data>
 </root>

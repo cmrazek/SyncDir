@@ -11,6 +11,8 @@ namespace SyncDirCmd
 {
 	internal class Program
 	{
+		private static Program _instance;
+
 		private string _configFile = null;
 		private bool _test = false;
 		private DateTime _startTime;
@@ -37,8 +39,8 @@ namespace SyncDirCmd
 
 			try
 			{
-				var prog = new Program();
-				Environment.ExitCode = prog.Run(args);
+				_instance = new Program();
+				Environment.ExitCode = _instance.Run(args);
 			}
 			catch (Exception ex)
 			{
@@ -216,6 +218,11 @@ namespace SyncDirCmd
 			}
 		}
 
+		public static Program Instance
+		{
+			get { return _instance; }
+		}
+
 		private void LoadConfigFile()
 		{
 			var schemaFileName = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Config.xsd");
@@ -245,17 +252,20 @@ namespace SyncDirCmd
 			var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Res.AppNameIdent);
 			if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
 
-			var fileName = Path.Combine(dataDir, string.Format("SyncDirCmd Report {0}.htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss")));
+			var repDir = Path.Combine(dataDir, Res.ReportDirName);
+			if (!Directory.Exists(repDir)) Directory.CreateDirectory(repDir);
+
+			var fileName = Path.Combine(repDir, string.Format("SyncDirCmd Report {0}.htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss")));
 			var index = 0;
 			while (File.Exists(fileName))
 			{
-				fileName = Path.Combine(dataDir, string.Format("SyncDirCmd Report {0} ({1}).htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss"), ++index));
+				fileName = Path.Combine(repDir, string.Format("SyncDirCmd Report {0} ({1}).htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss"), ++index));
 			}
 
 			return fileName;
 		}
 
-		private void LogError(Exception ex, string message)
+		public void LogError(Exception ex, string message)
 		{
 			_numErrors++;
 			Cout.WriteLine(Cout.ErrorColor, message);
@@ -263,7 +273,7 @@ namespace SyncDirCmd
 			_rep.WriteError(ex, message);
 		}
 
-		private void LogWarning(string message)
+		public void LogWarning(string message)
 		{
 			_numWarnings++;
 			Cout.WriteLine(Cout.WarningColor, message);
@@ -290,19 +300,19 @@ namespace SyncDirCmd
 						_rep.WriteSyncStart(title, "Master Directory", sync.left, "Mirror Directory", sync.right);
 						Cout.WriteLine(string.Concat("Master Directory: ", sync.left));
 						Cout.WriteLine(string.Concat("Mirror Directory: ", sync.right));
-						OneMaster(sync.left, sync.right);
+						OneMaster(sync, sync.left, sync.right);
 						break;
 					case Master.right:
 						_rep.WriteSyncStart(title, "Master Directory", sync.right, "Mirror Directory", sync.left);
 						Cout.WriteLine(string.Concat("Master Directory: ", sync.right));
 						Cout.WriteLine(string.Concat("Mirror Directory: ", sync.left));
-						OneMaster(sync.right, sync.left);
+						OneMaster(sync, sync.right, sync.left);
 						break;
 					case Master.both:
 						_rep.WriteSyncStart(title, "Left Directory", sync.left, "Right Directory", sync.right);
 						Cout.WriteLine(string.Concat("Left Directory: ", sync.left));
 						Cout.WriteLine(string.Concat("Right Directory: ", sync.right));
-						BothMaster(sync.left, sync.right);
+						BothMaster(sync, sync.left, sync.right);
 						break;
 				}
 			}
@@ -312,11 +322,11 @@ namespace SyncDirCmd
 			}
 		}
 
-		private void OneMaster(string masterPath, string mirrorPath)
+		private void OneMaster(Sync sync, string masterPath, string mirrorPath)
 		{
 			FileDb masterDb = new FileDb(masterPath);
 			FileDb mirrorDb = new FileDb(mirrorPath);
-			OneDir(new DirState(masterDb, mirrorDb, ""));
+			OneDir(new DirState(sync, masterDb, mirrorDb, ""));
 
 			if (!_test)
 			{
@@ -334,13 +344,14 @@ namespace SyncDirCmd
 
 				var leftPath = state.LeftAbsPath;
 				var rightPath = state.RightAbsPath;
+				var sync = state.Sync;
 
 				string[] leftFiles;
 				string[] leftDirs;
 				if (Directory.Exists(leftPath))
 				{
-					leftFiles = (from f in Directory.GetFiles(leftPath) select Path.GetFileName(f)).ToArray();
-					leftDirs = (from f in Directory.GetDirectories(leftPath) select Path.GetFileName(f)).ToArray();
+					leftFiles = GetUnignoredFileNamesInDirectory(state, leftPath).ToArray();
+					leftDirs = GetUnignoredDirectoryNamesInDirectory(state, leftPath).ToArray();
 				}
 				else
 				{
@@ -352,8 +363,8 @@ namespace SyncDirCmd
 				string[] rightDirs;
 				if (Directory.Exists(rightPath))
 				{
-					rightFiles = (from f in Directory.GetFiles(rightPath) select Path.GetFileName(f)).ToArray();
-					rightDirs = (from f in Directory.GetDirectories(rightPath) select Path.GetFileName(f)).ToArray();
+					rightFiles = GetUnignoredFileNamesInDirectory(state, rightPath).ToArray();
+					rightDirs = GetUnignoredDirectoryNamesInDirectory(state, rightPath).ToArray();
 				}
 				else
 				{
@@ -473,11 +484,11 @@ namespace SyncDirCmd
 			}
 		}
 
-		private void BothMaster(string leftPath, string rightPath)
+		private void BothMaster(Sync sync, string leftPath, string rightPath)
 		{
 			var leftDb = new FileDb(leftPath);
 			var rightDb = new FileDb(rightPath);
-			BothDir(new DirState(leftDb, rightDb, ""));
+			BothDir(new DirState(sync, leftDb, rightDb, ""));
 
 			if (!_test)
 			{
@@ -497,8 +508,8 @@ namespace SyncDirCmd
 
 			    if (Directory.Exists(state.LeftAbsPath))
 			    {
-			        leftFiles = (from f in Directory.GetFiles(state.LeftAbsPath) select Path.GetFileName(f)).ToArray();
-			        leftDirs = (from d in Directory.GetDirectories(state.LeftAbsPath) select Path.GetFileName(d)).ToArray();
+					leftFiles = GetUnignoredFileNamesInDirectory(state, state.LeftAbsPath).ToArray();
+					leftDirs = GetUnignoredDirectoryNamesInDirectory(state, state.LeftAbsPath).ToArray();
 			    }
 			    else
 			    {
@@ -508,8 +519,8 @@ namespace SyncDirCmd
 
 			    if (Directory.Exists(state.RightAbsPath))
 			    {
-			        rightFiles = (from f in Directory.GetFiles(state.RightAbsPath) select Path.GetFileName(f)).ToArray();
-			        rightDirs = (from d in Directory.GetDirectories(state.RightAbsPath) select Path.GetFileName(d)).ToArray();
+					rightFiles = GetUnignoredFileNamesInDirectory(state, state.RightAbsPath).ToArray();
+					rightDirs = GetUnignoredDirectoryNamesInDirectory(state, state.RightAbsPath).ToArray();
 			    }
 			    else
 			    {
@@ -733,7 +744,11 @@ namespace SyncDirCmd
 					new ReportDetail("Size", FormatFileSize(length)));
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Delete File: ", relFileName));
 
-				if (!_test) File.Delete(absFileName);
+				if (!_test)
+				{
+					if ((fi.Attributes & FileAttributes.ReadOnly) != 0) File.SetAttributes(absFileName, fi.Attributes & ~FileAttributes.ReadOnly);
+					File.Delete(absFileName);
+				}
 				_numFilesDeleted++;
 				_bytesDeleted += length;
 				return true;
@@ -752,7 +767,6 @@ namespace SyncDirCmd
 				
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Delete Dir: ", relPath));
 
-				int numFilesDeleted = 0;
 				long bytesDeleted = 0;
 
 				if (!_test) DeleteDir_Sub(absPath, ref bytesDeleted);
@@ -776,7 +790,11 @@ namespace SyncDirCmd
 			foreach (var fileName in Directory.GetFiles(path))
 			{
 				var length = (new FileInfo(fileName)).Length;
+
+				var fi = new FileInfo(fileName);
+				if ((fi.Attributes & FileAttributes.ReadOnly) != 0) File.SetAttributes(fileName, fi.Attributes & ~FileAttributes.ReadOnly);
 				File.Delete(fileName);
+
 				_numFilesDeleted++;
 				bytesDeleted += length;
 				_bytesDeleted += length;
@@ -787,13 +805,14 @@ namespace SyncDirCmd
 				DeleteDir_Sub(dirName, ref bytesDeleted);
 			}
 
+			var di = new DirectoryInfo(path);
+			if ((di.Attributes & FileAttributes.ReadOnly) != 0) di.Attributes &= ~FileAttributes.ReadOnly;
 			Directory.Delete(path);
 			_numDirsDeleted++;
 		}
 
 		private string FormatFileSize(long size)
 		{
-			var unit = "";
 			double sizef = size;
 
 			if (sizef < 1024.0) return string.Format("{0:N0} B", sizef);
@@ -805,6 +824,34 @@ namespace SyncDirCmd
 			if (sizef < 1024.0) return string.Format("{0:N1} GB", sizef);
 			sizef /= 1024.0;
 			return string.Format("{0:N1} TB", sizef);
+		}
+
+		private IEnumerable<string> GetUnignoredFileNamesInDirectory(DirState state, string dirPath)
+		{
+			var sync = state.Sync;
+
+			foreach (var fullPath in Directory.GetFiles(dirPath))
+			{
+				var fileName = Path.GetFileName(fullPath);
+				var relPath = state.GetRelFileName(fileName);
+				if (sync.IgnorePath(relPath)) continue;
+
+				yield return fileName;
+			}
+		}
+
+		private IEnumerable<string> GetUnignoredDirectoryNamesInDirectory(DirState state, string dirPath)
+		{
+			var sync = state.Sync;
+
+			foreach (var fullPath in Directory.GetDirectories(dirPath))
+			{
+				var dirName = Path.GetFileName(fullPath);
+				var relPath = state.GetRelFileName(dirName);
+				if (sync.IgnorePath(relPath)) continue;
+
+				yield return dirName;
+			}
 		}
 	}
 }
