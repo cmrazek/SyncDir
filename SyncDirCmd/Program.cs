@@ -13,13 +13,14 @@ namespace SyncDirCmd
 	{
 		private static Program _instance;
 
-		private string _configFile = null;
-		private bool _test = false;
+		private string _configFile;
+		private bool _test;
 		private DateTime _startTime;
-		private ReportWriter _rep = null;
-		private bool _launchRep = false;
-		private Config _config = null;	// Used when the config file has been specified through the command line.
-		private Sync _argSync = null;	// Used when sync parameters defined through the command line.
+		private ReportWriter _rep;
+		private bool _launchRep;
+		private string _repDir;
+		private Config _config;	// Used when the config file has been specified through the command line.
+		private Sync _argSync;	// Used when sync parameters defined through the command line.
 
 		// Stats
 		private int _numFilesAnalyzed = 0;
@@ -117,7 +118,8 @@ namespace SyncDirCmd
 				Cout.WriteLine(Cout.WarningColor, message);
 				Cout.WriteLine();
 			}
-
+			////////////////00000000011111111112222222222333333333344444444445555555555666666666677777777778
+			////////////////12345678901234567890123456789012345678901234567890123456789012345678901234567890
 			Cout.WriteLine("Usage:");
 			Cout.WriteLine("  SyncDirCmd [switches] [<config_file>]|[<left_dir> <right_dir>]");
 			Cout.WriteLine();
@@ -129,10 +131,12 @@ namespace SyncDirCmd
 			Cout.WriteLine("  You must specify either config_file, or left_dir and right_dir.");
 			Cout.WriteLine();
 			Cout.WriteLine("Switches:");
-			Cout.WriteLine("  -left  - Left dir is the master (default).");
-			Cout.WriteLine("  -right - Right dir is the master.");
-			Cout.WriteLine("  -both  - Both dirs are the master.");
-			Cout.WriteLine("  -test  - Test only (do not copy files).");
+			Cout.WriteLine("  -left           - Left dir is the master (default).");
+			Cout.WriteLine("  -right          - Right dir is the master.");
+			Cout.WriteLine("  -both           - Both dirs are the master.");
+			Cout.WriteLine("  -test           - Test only (do not copy files).");
+			Cout.WriteLine("  -repdir <path>  - Specifies the report output directory.");
+			Cout.WriteLine("  -launchrep      - Launch the report when complete.");
 
 			return false;
 		}
@@ -166,6 +170,11 @@ namespace SyncDirCmd
 								break;
 							case "launchrep":
 								_launchRep = true;
+								break;
+							case "rep":
+								a++;
+								if (a >= args.Length) throw new ArgumentException(string.Format("Expected file name to follow '{0}'.", arg));
+								_repDir = Path.GetFullPath(args[a]);
 								break;
 							case "test":
 								_test = true;
@@ -249,17 +258,20 @@ namespace SyncDirCmd
 
 		private string GetRepFileName()
 		{
-			var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Res.AppNameIdent);
-			if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+			if (string.IsNullOrEmpty(_repDir))
+			{
+				var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Res.AppNameIdent);
+				if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
 
-			var repDir = Path.Combine(dataDir, Res.ReportDirName);
-			if (!Directory.Exists(repDir)) Directory.CreateDirectory(repDir);
+				_repDir = Path.Combine(dataDir, Res.ReportDirName);
+				if (!Directory.Exists(_repDir)) Directory.CreateDirectory(_repDir);
+			}
 
-			var fileName = Path.Combine(repDir, string.Format("SyncDirCmd Report {0}.htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss")));
+			var fileName = Path.Combine(_repDir, string.Format("SyncDirCmd Report {0}.htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss")));
 			var index = 0;
 			while (File.Exists(fileName))
 			{
-				fileName = Path.Combine(repDir, string.Format("SyncDirCmd Report {0} ({1}).htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss"), ++index));
+				fileName = Path.Combine(_repDir, string.Format("SyncDirCmd Report {0} ({1}).htm", _startTime.ToString("yyyy-MM-dd HH.mm.ss"), ++index));
 			}
 
 			return fileName;
