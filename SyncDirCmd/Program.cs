@@ -95,8 +95,8 @@ namespace SyncDirCmd
 			LogSummary("Files analyzed", _numFilesAnalyzed.ToString());
 			LogSummary("Files copied", _numFilesCopied.ToString());
 			LogSummary("Files deleted", _numFilesDeleted.ToString());
-			LogSummary("Size copied", FormatFileSize(_bytesCopied));
-			LogSummary("Size deleted", FormatFileSize(_bytesDeleted));
+			LogSummary("Size copied", _bytesCopied.FormatSize());
+			LogSummary("Size deleted", _bytesDeleted.FormatSize());
 			LogSummary("Errors", _numErrors.ToString());
 			LogSummary("Warnings", _numWarnings.ToString());
 			_rep.EndSummary();
@@ -309,22 +309,37 @@ namespace SyncDirCmd
 				switch (sync.master)
 				{
 					case Master.left:
-						_rep.WriteSyncStart(title, "Master Directory", sync.left, "Mirror Directory", sync.right);
-						Cout.WriteLine(string.Concat("Master Directory: ", sync.left));
-						Cout.WriteLine(string.Concat("Mirror Directory: ", sync.right));
+						_rep.StartSection(string.Format("{0} -> {1}", sync.left, sync.right));
+
+						// TODO: remove
+						//_rep.WriteSyncStart(title, "Master Directory", sync.left, "Mirror Directory", sync.right);
+						//Cout.WriteLine(string.Concat("Master Directory: ", sync.left));
+						//Cout.WriteLine(string.Concat("Mirror Directory: ", sync.right));
+
 						OneMaster(sync, sync.left, sync.right);
+						_rep.EndSection();
 						break;
 					case Master.right:
-						_rep.WriteSyncStart(title, "Master Directory", sync.right, "Mirror Directory", sync.left);
-						Cout.WriteLine(string.Concat("Master Directory: ", sync.right));
-						Cout.WriteLine(string.Concat("Mirror Directory: ", sync.left));
+						_rep.StartSection(string.Format("{0} <- {1}", sync.left, sync.right));
+
+						// TODO: remove
+						//_rep.WriteSyncStart(title, "Master Directory", sync.right, "Mirror Directory", sync.left);
+						//Cout.WriteLine(string.Concat("Master Directory: ", sync.right));
+						//Cout.WriteLine(string.Concat("Mirror Directory: ", sync.left));
+
 						OneMaster(sync, sync.right, sync.left);
+						_rep.EndSection();
 						break;
 					case Master.both:
-						_rep.WriteSyncStart(title, "Left Directory", sync.left, "Right Directory", sync.right);
-						Cout.WriteLine(string.Concat("Left Directory: ", sync.left));
-						Cout.WriteLine(string.Concat("Right Directory: ", sync.right));
+						_rep.StartSection(string.Format("{0} <-> {1}", sync.left, sync.right));
+
+						// TODO: remove
+						//_rep.WriteSyncStart(title, "Left Directory", sync.left, "Right Directory", sync.right);
+						//Cout.WriteLine(string.Concat("Left Directory: ", sync.left));
+						//Cout.WriteLine(string.Concat("Right Directory: ", sync.right));
+
 						BothMaster(sync, sync.left, sync.right);
+						_rep.EndSection();
 						break;
 				}
 			}
@@ -706,11 +721,7 @@ namespace SyncDirCmd
 			{
 				var fi = new FileInfo(srcFileName);
 
-				_rep.WriteOperation("Copy File: " + relFileName,
-					new ReportDetail("From File Name", srcFileName),
-					new ReportDetail("To File Name", dstFileName),
-					new ReportDetail("Reason", reason),
-					new ReportDetail("Size", FormatFileSize(fi.Length)));
+				_rep.WriteFileOperation("Copy File", relFileName, fi.Length, reason);
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Copy File: ", relFileName));
 
 				if (!_test) File.Copy(srcFileName, dstFileName, true);
@@ -729,7 +740,7 @@ namespace SyncDirCmd
 		{
 			try
 			{
-				_rep.WriteOperation("Create Directory: " + relPath, new ReportDetail("Path", absPath), new ReportDetail("Reason", reason));
+				_rep.WriteFileOperation("Create Dir", relPath, null, reason);
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Create Dir: ", relPath));
 
 				if (!_test) Directory.CreateDirectory(absPath);
@@ -750,10 +761,7 @@ namespace SyncDirCmd
 				var fi = new FileInfo(absFileName);
 				var length = fi.Length;
 
-				_rep.WriteOperation("Delete File: " + relFileName,
-					new ReportDetail("File Name", absFileName),
-					new ReportDetail("Reason", reason),
-					new ReportDetail("Size", FormatFileSize(length)));
+				_rep.WriteFileOperation("Delete File", relFileName, fi.Length, reason);
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Delete File: ", relFileName));
 
 				if (!_test)
@@ -783,15 +791,12 @@ namespace SyncDirCmd
 
 				if (!_test) DeleteDir_Sub(absPath, ref bytesDeleted);
 
-				_rep.WriteOperation("Delete Directory: " + relPath,
-					new ReportDetail("Path", absPath),
-					new ReportDetail("Reason", reason),
-					new ReportDetail("Size", FormatFileSize(bytesDeleted)));
+				_rep.WriteFileOperation("Delete Dir", relPath, bytesDeleted, reason);
 				return true;
 			}
 			catch (Exception ex)
 			{
-				_rep.WriteOperation("Delete Directory: " + relPath, new ReportDetail("Path", absPath), new ReportDetail("Reason", reason));
+				_rep.WriteFileOperation("Delete Dir", relPath, null, reason);
 				LogError(ex, "Error when deleting directory.");
 				return false;
 			}
@@ -821,21 +826,6 @@ namespace SyncDirCmd
 			if ((di.Attributes & FileAttributes.ReadOnly) != 0) di.Attributes &= ~FileAttributes.ReadOnly;
 			Directory.Delete(path);
 			_numDirsDeleted++;
-		}
-
-		private string FormatFileSize(long size)
-		{
-			double sizef = size;
-
-			if (sizef < 1024.0) return string.Format("{0:N0} B", sizef);
-			sizef /= 1024.0;
-			if (sizef < 1024.0) return string.Format("{0:N1} KB", sizef);
-			sizef /= 1024.0;
-			if (sizef < 1024.0) return string.Format("{0:N1} MB", sizef);
-			sizef /= 1024.0;
-			if (sizef < 1024.0) return string.Format("{0:N1} GB", sizef);
-			sizef /= 1024.0;
-			return string.Format("{0:N1} TB", sizef);
 		}
 
 		private IEnumerable<string> GetUnignoredFileNamesInDirectory(DirState state, string dirPath)

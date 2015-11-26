@@ -11,6 +11,8 @@ namespace SyncDirCmd
 	{
 		private StreamWriter _rep = null;
 		private bool _started = false;
+		private bool _sectionHeaders = false;
+		private bool _sectionContent = false;
 
 		public ReportWriter(Stream stream)
 		{
@@ -51,26 +53,33 @@ namespace SyncDirCmd
 			if (!string.IsNullOrEmpty(title)) _rep.WriteLine(string.Format("<title>{0}</title>", HttpUtility.HtmlEncode(title)));
 
 			_rep.WriteLine("<style type=\"text/css\">");
-			_rep.WriteLine("h1 { font-family: \"Verdana\"; background-color: #6666aa; color: #ffffff; }");
-			_rep.WriteLine("body { font-family: \"Verdana\"; font-size: .8em; background-color: #f8f8f8; }");
+			_rep.WriteLine("h1 { font-family: \"Segoe UI\", Verdana, sans-serif; color: #000000; }");
+			_rep.WriteLine("body { font-family: \"Segoe UI\", Verdana, sans-serif; font-size: .8em; background-color: #f8f8f8; }");
 			_rep.WriteLine(".headerTable { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; width: 100%; }");
 			_rep.WriteLine(".headerItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
-			_rep.WriteLine(".headerLabel { font-weight: bold; background-color: #6666aa; color: #ffffff; width: 200px; }");
+			_rep.WriteLine(".headerLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
 			_rep.WriteLine(".headerValue { }");
 			_rep.WriteLine(".infoItem { }");
 			_rep.WriteLine(".errorItem { color: #ffffff; background-color: #ff0000; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
 			_rep.WriteLine(".errorException { font-family: Consolas, Courier New; color: #ffeeee; }");
 			_rep.WriteLine(".warningItem { color: #ffffff; background-color: #ff8800; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
-			_rep.WriteLine(".operationItem { font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
-			_rep.WriteLine(".operationDetailTable { margin-left: 20px; }");
-			_rep.WriteLine(".operationDetailItem { }");
-			_rep.WriteLine(".operationDetailLabel { display: inline-block; font-weight: normal; width: 180px; }");
-			_rep.WriteLine(".operationDetailValue { font-weight: normal; }");
+			_rep.WriteLine(".section { border: solid 1px #cccccc; margin: 2px 0px 2px 0px; }");
+			_rep.WriteLine(".sectionTitle { font-weight: bold; font-size: 1.2em; margin: 2px 2px 2px 2px; }");
+			_rep.WriteLine(".opTable { }");
+			_rep.WriteLine(".opHeader { font-weight: bold; font-size: .9em; }");
+			_rep.WriteLine(".opRow { font-size: .9em; }");
+			_rep.WriteLine(".opRow td { background-color: #eeeeee; padding-left: 4px; padding-top: 0px; padding-right: 4px; padding-bottom: 0px; }");
+			_rep.WriteLine(".opDetail { font-weight: normal; display: inline; }");
+			_rep.WriteLine(".opAction { }");
+			_rep.WriteLine(".opPath { }");
+			_rep.WriteLine(".opSize { }");
+			_rep.WriteLine(".opReason { }");
+			_rep.WriteLine(".noChanges { font-size: .9em; }");
 			_rep.WriteLine(".syncStart { background-color: #ffffff; }");
 			_rep.WriteLine(".data { font-family: Consolas, Courier New; background-color: #ffffff; }");
 			_rep.WriteLine(".summaryTable { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; width: 100%; }");
 			_rep.WriteLine(".summaryItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
-			_rep.WriteLine(".summaryLabel { font-weight: bold; background-color: #6666aa; color: #ffffff; width: 200px; }");
+			_rep.WriteLine(".summaryLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
 			_rep.WriteLine(".summaryValue { }");
 			_rep.WriteLine("</style>");
 
@@ -128,38 +137,50 @@ namespace SyncDirCmd
 			_rep.WriteLine("</div>");
 		}
 
-		public void WriteOperation(string message, params ReportDetail[] details)
+		public void WriteFileOperation(string action, string relPath, long? size, string reason)
 		{
-			WriteOperation(message, null, details);
-		}
-
-		private void WriteOperation(string message, string itemClasses, params ReportDetail[] details)
-		{
-			_rep.Write("<div class=\"operationItem");
-			if (!string.IsNullOrEmpty(itemClasses)) _rep.Write(" " + itemClasses);
-			_rep.Write("\">");
-			_rep.Write(HttpUtility.HtmlEncode(message));
-			if (details != null && details.Length > 0)
+			if (!_sectionHeaders)
 			{
-				_rep.Write("<table class=\"operationDetailTable\">");
-				foreach (var d in details)
-				{
-					_rep.Write("<tr class=\"operationDetailItem\"><td class=\"operationDetailLabel\">");
-					_rep.Write(HttpUtility.HtmlEncode(d.Label));
-					_rep.Write("</td><td class=\"operationDetailValue data\">");
-					_rep.Write(HttpUtility.HtmlEncode(d.Value));
-					_rep.Write("</td></tr>");
-				}
-				_rep.Write("</table>");
+				_rep.Write("<table class=\"opTable\">");
+				_rep.WriteLine("<tr class=\"opHeader\"><td>Action</td><td>Path</td><td>Size</td><td>Reason</td></tr>");
+				_sectionHeaders = true;
 			}
-			_rep.WriteLine("</div>");
+			_rep.Write("<tr class=\"opRow\"><td class=\"opAction\">");
+			_rep.Write(HttpUtility.HtmlEncode(action));
+			_rep.Write("</td><td class=\"opPath\">");
+			_rep.Write(HttpUtility.HtmlEncode(relPath));
+			_rep.Write("</td><td class=\"opSize\">");
+			if (size.HasValue) _rep.Write(HttpUtility.HtmlEncode(size.Value.FormatSize()));
+			_rep.Write("</td><td class=\"opReason\">");
+			_rep.Write(HttpUtility.HtmlEncode(reason));
+			_rep.WriteLine("</td></tr>");
+
+			_sectionContent = true;
 		}
 
-		public void WriteSyncStart(string message, string leftDirName, string leftDir, string rightDirName, string rightDir)
+		public void StartSection(string title)
 		{
-			WriteOperation(message, "syncStart",
-				new ReportDetail(leftDirName, leftDir),
-				new ReportDetail(rightDirName, rightDir));
+			_rep.Write("<div class=\"section\">");
+			_rep.Write("<div class=\"sectionTitle\">");
+			_rep.Write(HttpUtility.HtmlEncode(title));
+			_rep.WriteLine("</div>");
+
+			_sectionContent = false;
+			_sectionHeaders = false;
+		}
+
+		public void EndSection()
+		{
+			if (_sectionContent)
+			{
+				_rep.WriteLine("</table>");
+			}
+			else
+			{
+				_rep.WriteLine("<div class=\"noChanges\">(no changes)</div>");
+			}
+
+			_rep.WriteLine("</div>");
 		}
 
 		public void StartSummary()
