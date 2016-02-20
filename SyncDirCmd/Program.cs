@@ -369,6 +369,11 @@ namespace SyncDirCmd
 				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
 
+                if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
+
+                state.LeftDb.UpdateDirectory(state.RelPath);
+                state.RightDb.UpdateDirectory(state.RelPath);
+
 				var leftPath = state.LeftAbsPath;
 				var rightPath = state.RightAbsPath;
 				var sync = state.Sync;
@@ -496,13 +501,13 @@ namespace SyncDirCmd
 					var relDirName = state.GetRelFileName(dirName);
 
 					string reason;
-					if (state.LeftDb.FileExistsInDir(relDirName)) reason = "directory deleted in master";
+					if (state.LeftDb.DirectoryExists(relDirName)) reason = "directory deleted in master";
 					else reason = "directory does not exist in master";
 
 					DeleteDir(relDirName, state.GetRightAbsFileName(dirName), reason);
 
-					state.LeftDb.DeleteFilesInDir(relDirName);
-					state.RightDb.DeleteFilesInDir(relDirName);
+					state.LeftDb.DeleteDirectory(relDirName);
+					state.RightDb.DeleteDirectory(relDirName);
 				}
 			}
 			catch (Exception ex)
@@ -530,6 +535,12 @@ namespace SyncDirCmd
 			{
 				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
+
+                if (!Directory.Exists(state.LeftAbsPath)) CreateDir(state.RelPath, state.LeftAbsPath, "Left directory does not exist.");
+                if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
+
+                state.LeftDb.UpdateDirectory(state.RelPath);
+                state.RightDb.UpdateDirectory(state.RelPath);
 
 				string[] leftFiles, leftDirs, rightFiles, rightDirs;
 
@@ -662,17 +673,17 @@ namespace SyncDirCmd
 					if (!rightDirs.Any(r => r.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
 					{
 						// On left side only.
-						if (state.RightDb.FileExistsInDir(relDirName))
+						if (state.RightDb.DirectoryExists(relDirName))
 						{
-							if (DeleteDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on left deleted by user"))
+							if (DeleteDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on right deleted by user"))
 							{
-								state.RightDb.DeleteFilesInDir(relDirName);
-								state.LeftDb.DeleteFilesInDir(relDirName);
+								state.RightDb.DeleteDirectory(relDirName);
+								state.LeftDb.DeleteDirectory(relDirName);
 							}
 						}
 						else
 						{
-							if (CreateDir(relDirName, state.GetRightAbsFileName(dirName), "directory on right new"))
+							if (CreateDir(relDirName, state.GetRightAbsFileName(dirName), "directory on left new"))
 							{
 								BothDir(new DirState(state, dirName));
 							}
@@ -692,17 +703,17 @@ namespace SyncDirCmd
 
 					var relDirName = state.GetRelFileName(dirName);
 
-					if (state.LeftDb.FileExistsInDir(relDirName))
+					if (state.LeftDb.DirectoryExists(relDirName))
 					{
-						if (DeleteDir(relDirName, state.GetRightAbsFileName(dirName), "directory on right deleted by user"))
+						if (DeleteDir(relDirName, state.GetRightAbsFileName(dirName), "directory on left deleted by user"))
 						{
-							state.RightDb.DeleteFilesInDir(relDirName);
-							state.LeftDb.DeleteFilesInDir(relDirName);
+							state.RightDb.DeleteDirectory(relDirName);
+							state.LeftDb.DeleteDirectory(relDirName);
 						}
 					}
 					else
 					{
-						if (CreateDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on left new"))
+						if (CreateDir(relDirName, state.GetLeftAbsFileName(dirName), "directory on right new"))
 						{
 							BothDir(new DirState(state, dirName));
 						}

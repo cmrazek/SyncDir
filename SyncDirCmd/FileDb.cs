@@ -15,10 +15,11 @@ namespace SyncDirCmd
 
 		class FileEntry
 		{
-			public string FileName { get; set; }
+			public string PathName { get; set; }
 			public DateTime? Modified { get; set; }
 			public long Size { get; set; }
 			public bool DeleteMe { get; set; }
+            public bool Directory { get; set; }
 		}
 
 		public FileDb(string basePath)
@@ -72,6 +73,7 @@ namespace SyncDirCmd
 				string fileName = null;
 				DateTime? modified = null;
 				long size = -1;
+                bool dir = false;
 
 				foreach (var rec in line.Split('|'))
 				{
@@ -101,6 +103,9 @@ namespace SyncDirCmd
 								}
 							}
 							break;
+                        case "dir":
+                            bool.TryParse(value, out dir);
+                            break;
 					}
 				}
 
@@ -108,9 +113,10 @@ namespace SyncDirCmd
 				{
 					_files[fileName.ToLower()] = new FileEntry
 						{
-							FileName = fileName,
+							PathName = fileName,
 							Modified = modified,
-							Size = size
+							Size = size,
+                            Directory = dir
 						};
 				}
 			}
@@ -129,7 +135,12 @@ namespace SyncDirCmd
 				if (entry.DeleteMe == false)
 				{
 					sb.Append("fn=");
-					sb.Append(entry.FileName);
+					sb.Append(entry.PathName);
+
+                    if (entry.Directory)
+                    {
+                        sb.Append("|dir=true");
+                    }
 
 					if (entry.Modified.HasValue)
 					{
@@ -137,7 +148,7 @@ namespace SyncDirCmd
 						sb.Append(entry.Modified.Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 					}
 
-					if (entry.Size >= 0)
+					if (entry.Size >= 0 && !entry.Directory)
 					{
 						sb.Append("|size=");
 						sb.Append(entry.Size.ToString());
@@ -161,7 +172,7 @@ namespace SyncDirCmd
 				if (!_files.TryGetValue(relPathName.ToLower(), out entry))
 				{
 					_files[relPathName.ToLower()] = entry = new FileEntry();
-					entry.FileName = relPathName;
+					entry.PathName = relPathName;
 				}
 
 				entry.Modified = fi.LastWriteTime;
@@ -172,6 +183,26 @@ namespace SyncDirCmd
 				_files.Remove(relPathName.ToLower());
 			}
 		}
+
+        public void UpdateDirectory(string relPathName)
+        {
+            var absPath = Path.Combine(_basePath, relPathName);
+            if (Directory.Exists(absPath))
+            {
+                FileEntry entry;
+                if (!_files.TryGetValue(relPathName.ToLower(), out entry))
+                {
+                    _files[relPathName.ToLower()] = entry = new FileEntry();
+                    entry.PathName = relPathName;
+                }
+
+                entry.Directory = true;
+            }
+            else
+            {
+                _files.Remove(relPathName.ToLower());
+            }
+        }
 
 		public bool FileChanged(string relPathName, FileInfo fi, ref string reason)
 		{
@@ -212,10 +243,25 @@ namespace SyncDirCmd
 
 		public bool FileExists(string relPathName)
 		{
-			return _files.ContainsKey(relPathName.ToLower());
+            FileEntry entry;
+            if (_files.TryGetValue(relPathName.ToLower(), out entry))
+            {
+                return entry.Directory == false;
+            }
+            return false;
 		}
 
-		public void DeleteFilesInDir(string relDirPath)
+        public bool DirectoryExists(string relPathName)
+        {
+            FileEntry entry;
+            if (_files.TryGetValue(relPathName.ToLower(), out entry))
+            {
+                return entry.Directory;
+            }
+            return false;
+        }
+
+		public void DeleteDirectory(string relDirPath)
 		{
 			if (string.IsNullOrEmpty(relDirPath))
 			{
@@ -224,10 +270,9 @@ namespace SyncDirCmd
 			}
 			else
 			{
-				var startsWith = string.Concat(relDirPath, Path.DirectorySeparatorChar);
 				foreach (var key in _files.Keys)
 				{
-					if (key.StartsWith(relDirPath, StringComparison.OrdinalIgnoreCase))
+                    if (PathIsInDir(key, relDirPath))
 					{
 						_files[key].DeleteMe = true;
 					}
@@ -242,26 +287,17 @@ namespace SyncDirCmd
 			return true;
 		}
 
-		public bool FileExistsInDir(string relDirPath)
-		{
-			if (string.IsNullOrEmpty(relDirPath))
-			{
-				return _files.Count > 0;
-			}
-			else
-			{
-				var startsWith = string.Concat(relDirPath, Path.DirectorySeparatorChar);
-				foreach (var key in _files.Keys)
-				{
-					if (key.StartsWith(startsWith, StringComparison.OrdinalIgnoreCase))
-					{
-						return true;
-					}
-				}
+        public static bool PathIsInDir(string testPathName, string dirPathName)
+        {
+            if (!testPathName.StartsWith(dirPathName, StringComparison.OrdinalIgnoreCase)) return false;
 
-				return false;
-			}
-		}
-		
+            if (testPathName.Length > dirPathName.Length)
+            {
+                var ch = testPathName[dirPathName.Length];
+                if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar) return true;
+                else return false;
+            }
+            else return true;
+        }
 	}
 }
