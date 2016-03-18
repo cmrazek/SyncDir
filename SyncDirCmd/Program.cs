@@ -311,34 +311,52 @@ namespace SyncDirCmd
 					case Master.left:
 						_rep.StartSection(string.Format("{0} -> {1}", sync.left, sync.right));
 
-						// TODO: remove
-						//_rep.WriteSyncStart(title, "Master Directory", sync.left, "Mirror Directory", sync.right);
-						//Cout.WriteLine(string.Concat("Master Directory: ", sync.left));
-						//Cout.WriteLine(string.Concat("Mirror Directory: ", sync.right));
-
-						OneMaster(sync, sync.left, sync.right);
+						if (!Directory.Exists(sync.left))
+						{
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+						}
+						else if (!Directory.Exists(sync.right))
+						{
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+						}
+						else
+						{
+							OneMaster(sync, sync.left, sync.right);
+						}
 						_rep.EndSection();
 						break;
 					case Master.right:
 						_rep.StartSection(string.Format("{0} <- {1}", sync.left, sync.right));
 
-						// TODO: remove
-						//_rep.WriteSyncStart(title, "Master Directory", sync.right, "Mirror Directory", sync.left);
-						//Cout.WriteLine(string.Concat("Master Directory: ", sync.right));
-						//Cout.WriteLine(string.Concat("Mirror Directory: ", sync.left));
-
-						OneMaster(sync, sync.right, sync.left);
+						if (!Directory.Exists(sync.left))
+						{
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+						}
+						else if (!Directory.Exists(sync.right))
+						{
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+						}
+						else
+						{
+							OneMaster(sync, sync.right, sync.left);
+						}
 						_rep.EndSection();
 						break;
 					case Master.both:
 						_rep.StartSection(string.Format("{0} <-> {1}", sync.left, sync.right));
 
-						// TODO: remove
-						//_rep.WriteSyncStart(title, "Left Directory", sync.left, "Right Directory", sync.right);
-						//Cout.WriteLine(string.Concat("Left Directory: ", sync.left));
-						//Cout.WriteLine(string.Concat("Right Directory: ", sync.right));
-
-						BothMaster(sync, sync.left, sync.right);
+						if (!Directory.Exists(sync.left))
+						{
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+						}
+						else if (!Directory.Exists(sync.right))
+						{
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+						}
+						else
+						{
+							BothMaster(sync, sync.left, sync.right);
+						}
 						_rep.EndSection();
 						break;
 				}

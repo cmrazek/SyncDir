@@ -130,6 +130,13 @@ namespace SyncDirCmd
 			_rep.WriteLine("</span></div>");
 		}
 
+		public void WriteError(string message)
+		{
+			_rep.Write("<div class=\"errorItem\">");
+			if (!string.IsNullOrWhiteSpace(message)) _rep.Write(HttpUtility.HtmlEncode(message));
+			_rep.WriteLine("</div>");
+		}
+
 		public void WriteWarning(string message)
 		{
 			_rep.Write("<div class=\"warningItem\">");
