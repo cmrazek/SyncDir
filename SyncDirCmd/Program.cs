@@ -387,10 +387,10 @@ namespace SyncDirCmd
 				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
 
-                if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
+				if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
 
-                state.LeftDb.UpdateDirectory(state.RelPath);
-                state.RightDb.UpdateDirectory(state.RelPath);
+				state.LeftDb.UpdateDirectory(state.RelPath);
+				state.RightDb.UpdateDirectory(state.RelPath);
 
 				var leftPath = state.LeftAbsPath;
 				var rightPath = state.RightAbsPath;
@@ -554,37 +554,37 @@ namespace SyncDirCmd
 				Cout.WriteLine(Cout.UnimportantColor, state.RelPath);
 				_numDirsAnalyzed++;
 
-                if (!Directory.Exists(state.LeftAbsPath)) CreateDir(state.RelPath, state.LeftAbsPath, "Left directory does not exist.");
-                if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
+				if (!Directory.Exists(state.LeftAbsPath)) CreateDir(state.RelPath, state.LeftAbsPath, "Left directory does not exist.");
+				if (!Directory.Exists(state.RightAbsPath)) CreateDir(state.RelPath, state.RightAbsPath, "Right directory does not exist.");
 
-                state.LeftDb.UpdateDirectory(state.RelPath);
-                state.RightDb.UpdateDirectory(state.RelPath);
+				state.LeftDb.UpdateDirectory(state.RelPath);
+				state.RightDb.UpdateDirectory(state.RelPath);
 
 				string[] leftFiles, leftDirs, rightFiles, rightDirs;
 
-			    if (Directory.Exists(state.LeftAbsPath))
-			    {
+				if (Directory.Exists(state.LeftAbsPath))
+				{
 					leftFiles = GetUnignoredFileNamesInDirectory(state, state.LeftAbsPath).ToArray();
 					leftDirs = GetUnignoredDirectoryNamesInDirectory(state, state.LeftAbsPath).ToArray();
-			    }
-			    else
-			    {
-			        leftFiles = new string[] { };
-			        leftDirs = new string[] { };
-			    }
+				}
+				else
+				{
+					leftFiles = new string[] { };
+					leftDirs = new string[] { };
+				}
 
-			    if (Directory.Exists(state.RightAbsPath))
-			    {
+				if (Directory.Exists(state.RightAbsPath))
+				{
 					rightFiles = GetUnignoredFileNamesInDirectory(state, state.RightAbsPath).ToArray();
 					rightDirs = GetUnignoredDirectoryNamesInDirectory(state, state.RightAbsPath).ToArray();
-			    }
-			    else
-			    {
-			        rightFiles = new string[] { };
-			        rightDirs = new string[] { };
-			    }
+				}
+				else
+				{
+					rightFiles = new string[] { };
+					rightDirs = new string[] { };
+				}
 
-			    // Files that don't exist on right.
+				// Files that don't exist on right.
 				foreach (var fileName in leftFiles)
 				{
 					_numFilesAnalyzed++;
@@ -753,7 +753,11 @@ namespace SyncDirCmd
 				_rep.WriteFileOperation("Copy File", relFileName, fi.Length, reason);
 				Cout.WriteLine(Cout.ImportantColor, string.Concat("Copy File: ", relFileName));
 
-				if (!_test) File.Copy(srcFileName, dstFileName, true);
+				if (!_test)
+				{
+					CheckFileAttributes(dstFileName);
+					File.Copy(srcFileName, dstFileName, true);
+				}
 				_numFilesCopied++;
 				_bytesCopied += fi.Length;
 				return true;
@@ -795,7 +799,7 @@ namespace SyncDirCmd
 
 				if (!_test)
 				{
-					if ((fi.Attributes & FileAttributes.ReadOnly) != 0) File.SetAttributes(absFileName, fi.Attributes & ~FileAttributes.ReadOnly);
+					CheckFileAttributes(absFileName);
 					File.Delete(absFileName);
 				}
 				_numFilesDeleted++;
@@ -837,8 +841,7 @@ namespace SyncDirCmd
 			{
 				var length = (new FileInfo(fileName)).Length;
 
-				var fi = new FileInfo(fileName);
-				if ((fi.Attributes & FileAttributes.ReadOnly) != 0) File.SetAttributes(fileName, fi.Attributes & ~FileAttributes.ReadOnly);
+				CheckFileAttributes(fileName);
 				File.Delete(fileName);
 
 				_numFilesDeleted++;
@@ -855,6 +858,19 @@ namespace SyncDirCmd
 			if ((di.Attributes & FileAttributes.ReadOnly) != 0) di.Attributes &= ~FileAttributes.ReadOnly;
 			Directory.Delete(path);
 			_numDirsDeleted++;
+		}
+
+		private void CheckFileAttributes(string fileName)
+		{
+			if (File.Exists(fileName))
+			{
+				var attribs = File.GetAttributes(fileName);
+				if ((attribs & FileAttributes.ReadOnly) != 0)
+				{
+					attribs &= ~FileAttributes.ReadOnly;
+					File.SetAttributes(fileName, attribs);
+				}
+			}
 		}
 
 		private IEnumerable<string> GetUnignoredFileNamesInDirectory(DirState state, string dirPath)

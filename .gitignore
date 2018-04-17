@@ -1,5 +1,6 @@
 *.suo
 *.user
 
+/.vs/
 /SyncDirCmd/bin/*
 /SyncDirCmd/obj/*
