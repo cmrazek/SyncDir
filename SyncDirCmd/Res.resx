@@ -123,6 +123,9 @@
   <data name="AppNameIdent" xml:space="preserve">
     <value>SyncDirCmd</value>
   </data>
+  <data name="DatabaseFileName" xml:space="preserve">
+    <value>Files.sqlite</value>
+  </data>
   <data name="ReportDirName" xml:space="preserve">
     <value>Reports</value>
   </data>

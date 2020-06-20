@@ -55,10 +55,10 @@ namespace SyncDirCmd
 			_rep.WriteLine("<style type=\"text/css\">");
 			_rep.WriteLine("h1 { font-family: \"Segoe UI\", Verdana, sans-serif; color: #000000; }");
 			_rep.WriteLine("body { font-family: \"Segoe UI\", Verdana, sans-serif; font-size: .8em; background-color: #f8f8f8; }");
-			_rep.WriteLine(".headerTable { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; width: 100%; }");
+			_rep.WriteLine(".headerTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }");
 			_rep.WriteLine(".headerItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
 			_rep.WriteLine(".headerLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
-			_rep.WriteLine(".headerValue { }");
+			_rep.WriteLine(".headerValue { border: 1px solid #cccccc; }");
 			_rep.WriteLine(".infoItem { }");
 			_rep.WriteLine(".errorItem { color: #ffffff; background-color: #ff0000; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
 			_rep.WriteLine(".errorException { font-family: Consolas, Courier New; color: #ffeeee; }");
@@ -77,10 +77,10 @@ namespace SyncDirCmd
 			_rep.WriteLine(".noChanges { font-size: .9em; }");
 			_rep.WriteLine(".syncStart { background-color: #ffffff; }");
 			_rep.WriteLine(".data { font-family: Consolas, Courier New; background-color: #ffffff; }");
-			_rep.WriteLine(".summaryTable { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; width: 100%; }");
+			_rep.WriteLine(".summaryTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }");
 			_rep.WriteLine(".summaryItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
 			_rep.WriteLine(".summaryLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
-			_rep.WriteLine(".summaryValue { }");
+			_rep.WriteLine(".summaryValue { border: 1px solid #cccccc; }");
 			_rep.WriteLine("</style>");
 
 			_rep.WriteLine("</head>");
@@ -199,8 +199,19 @@ namespace SyncDirCmd
 		{
 			_rep.Write("<tr class=\"summaryItem\"><td class=\"summaryLabel\">");
 			_rep.Write(HttpUtility.HtmlEncode(label));
-			_rep.Write("</td><td class=\"summaryValue data\">");
+			_rep.Write("</td><td class=\"summaryValue data\" colspan=\"2\">");
 			_rep.Write(HttpUtility.HtmlEncode(value));
+			_rep.WriteLine("</td></tr>");
+		}
+
+		public void WriteSummary(string label, string leftValue, string rightValue)
+		{
+			_rep.Write("<tr class=\"summaryItem\"><td class=\"summaryLabel\">");
+			_rep.Write(HttpUtility.HtmlEncode(label));
+			_rep.Write("</td><td class=\"summaryValue data\">");
+			_rep.Write(HttpUtility.HtmlEncode(leftValue));
+			_rep.Write("</td><td class=\"summaryValue data\">");
+			_rep.Write(HttpUtility.HtmlEncode(rightValue));
 			_rep.WriteLine("</td></tr>");
 		}
 
