@@ -8,14 +8,14 @@ namespace SyncDirCmd
 {
 	class DirState
 	{
-		public Sync Sync { get; set; }
+		public SyncDir Sync { get; set; }
 		public FileDb LeftDb { get; set; }
 		public FileDb RightDb { get; set; }
 		public string RelPath { get; set; }
 		public string LeftAbsPath { get; set; }
 		public string RightAbsPath { get; set; }
 
-		public DirState(Sync sync, FileDb leftDb, FileDb rightDb, string relPath)
+		public DirState(SyncDir sync, FileDb leftDb, FileDb rightDb, string relPath)
 		{
 			if (sync == null || leftDb == null || rightDb == null) throw new ArgumentNullException();
 

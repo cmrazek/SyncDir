@@ -52,36 +52,36 @@ namespace SyncDirCmd
 			_rep.WriteLine("<head>");
 			if (!string.IsNullOrEmpty(title)) _rep.WriteLine(string.Format("<title>{0}</title>", HttpUtility.HtmlEncode(title)));
 
-			_rep.WriteLine("<style type=\"text/css\">");
-			_rep.WriteLine("h1 { font-family: \"Segoe UI\", Verdana, sans-serif; color: #000000; }");
-			_rep.WriteLine("body { font-family: \"Segoe UI\", Verdana, sans-serif; font-size: .8em; background-color: #f8f8f8; }");
-			_rep.WriteLine(".headerTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }");
-			_rep.WriteLine(".headerItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
-			_rep.WriteLine(".headerLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
-			_rep.WriteLine(".headerValue { border: 1px solid #cccccc; }");
-			_rep.WriteLine(".infoItem { }");
-			_rep.WriteLine(".errorItem { color: #ffffff; background-color: #ff0000; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
-			_rep.WriteLine(".errorException { font-family: Consolas, Courier New; color: #ffeeee; }");
-			_rep.WriteLine(".warningItem { color: #ffffff; background-color: #ff8800; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }");
-			_rep.WriteLine(".section { border: solid 1px #cccccc; margin: 2px 0px 2px 0px; }");
-			_rep.WriteLine(".sectionTitle { font-weight: bold; font-size: 1.2em; margin: 2px 2px 2px 2px; }");
-			_rep.WriteLine(".opTable { }");
-			_rep.WriteLine(".opHeader { font-weight: bold; font-size: .9em; }");
-			_rep.WriteLine(".opRow { font-size: .9em; }");
-			_rep.WriteLine(".opRow td { background-color: #eeeeee; padding-left: 4px; padding-top: 0px; padding-right: 4px; padding-bottom: 0px; }");
-			_rep.WriteLine(".opDetail { font-weight: normal; display: inline; }");
-			_rep.WriteLine(".opAction { }");
-			_rep.WriteLine(".opPath { }");
-			_rep.WriteLine(".opSize { }");
-			_rep.WriteLine(".opReason { }");
-			_rep.WriteLine(".noChanges { font-size: .9em; }");
-			_rep.WriteLine(".syncStart { background-color: #ffffff; }");
-			_rep.WriteLine(".data { font-family: Consolas, Courier New; background-color: #ffffff; }");
-			_rep.WriteLine(".summaryTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }");
-			_rep.WriteLine(".summaryItem { border: 1px solid #cccccc; padding: 0px 0px 0px 0px; }");
-			_rep.WriteLine(".summaryLabel { font-weight: bold; background-color: #eeeeee; color: #000000; width: 200px; }");
-			_rep.WriteLine(".summaryValue { border: 1px solid #cccccc; }");
-			_rep.WriteLine("</style>");
+			_rep.WriteLine(@"<style type=""text/css"">
+h1 { font-family: ""Segoe UI"", Verdana, sans-serif; color: #ffffff; }
+body { font-family: ""Segoe UI"", Verdana, sans-serif; font-size: .8em; background-color: #222222; color: #cccccc; }
+.headerTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }
+.headerItem { border: 1px solid #000000; padding: 0px 0px 0px 0px; }
+.headerLabel { font-weight: bold; background-color: #333333; color: #ffffff; width: 200px; }
+.headerValue { border: 1px solid #000000; }
+.infoItem { }
+.errorItem { color: #ffffff; background-color: #ff0000; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }
+.errorException { font-family: Consolas, Courier New; color: #ffeeee; }
+.warningItem { color: #ffffff; background-color: #ff8800; font-weight: bold; border: 1px solid #cccccc; margin-top: 4px; margin-bottom: 4px; padding-left: 4px; }
+.section { border: solid 1px #000000; margin: 2px 0px 2px 0px; }
+.sectionTitle { font-weight: bold; font-size: 1.2em; margin: 2px 2px 2px 2px; }
+.opTable { }
+.opHeader { font-weight: bold; font-size: .9em; }
+.opRow { font-size: .9em; }
+.opRow td { background-color: #333333; padding-left: 4px; padding-top: 0px; padding-right: 4px; padding-bottom: 0px; }
+.opDetail { font-weight: normal; display: inline; }
+.opAction { }
+.opPath { }
+.opSize { }
+.opReason { }
+.noChanges { font-size: .9em; }
+.syncStart { background-color: #222222; }
+.data { font-family: Consolas, Courier New; background-color: #333333; }
+.summaryTable { padding: 0px 0px 0px 0px; /*width: 100%;*/ }
+.summaryItem { border: 1px solid #000000; padding: 0px 0px 0px 0px; }
+.summaryLabel { font-weight: bold; background-color: #333333; color: #cccccc; width: 200px; }
+.summaryValue { border: 1px solid #000000; background-color: #333333; color: #cccccc; }
+</style>");
 
 			_rep.WriteLine("</head>");
 

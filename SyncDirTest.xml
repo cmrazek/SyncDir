@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<config xmlns="SyncDirCmd.Config">
-	<sync>
-		<left>C:\Temp\CubeGame</left>
-		<right>C:\Temp\CubeGameSync</right>
-		<master>both</master>
-	</sync>
-</config>

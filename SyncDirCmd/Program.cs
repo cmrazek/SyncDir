@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,8 +20,8 @@ namespace SyncDirCmd
 		private ReportWriter _rep;
 		private bool _launchRep;
 		private string _repDir;
-		private Config _config;	// Used when the config file has been specified through the command line.
-		private Sync _argSync;  // Used when sync parameters defined through the command line.
+		private ConfigFile _config;	// Used when the config file has been specified through the command line.
+		private SyncDir _argSync;  // Used when sync parameters defined through the command line.
 		private Stats _leftStats = new Stats();
 		private Stats _rightStats = new Stats();
 		private int _numErrors = 0;
@@ -65,9 +66,9 @@ namespace SyncDirCmd
 				else if (!string.IsNullOrEmpty(_configFile))
 				{
 					LoadConfigFile();
-					if (_config.sync != null)
+					if (_config.Directories != null)
 					{
-						foreach (var sync in _config.sync)
+						foreach (var sync in _config.Directories)
 						{
 							StartSync(db, sync);
 						}
@@ -144,7 +145,7 @@ namespace SyncDirCmd
 				var rxArgs = new Regex(@"^(?:-|/)(\w+)$");
 				Match match;
 				var argList = new List<string>();
-				var master = Master.left;
+				var master = Master.Left;
 
 				for (int a = 0; a < args.Length; a++)
 				{
@@ -156,13 +157,13 @@ namespace SyncDirCmd
 						switch (match.Groups[1].Value.ToLower())
 						{
 							case "left":
-								master = Master.left;
+								master = Master.Left;
 								break;
 							case "right":
-								master = Master.right;
+								master = Master.Right;
 								break;
 							case "both":
-								master = Master.both;
+								master = Master.Both;
 								break;
 							case "launchrep":
 								_launchRep = true;
@@ -187,16 +188,15 @@ namespace SyncDirCmd
 
 				if (argList.Count == 2)
 				{
-					var sync = new Sync
+					var sync = new SyncDir
 					{
-						left = argList[0],
-						right = argList[1],
-						master = master,
-						masterSpecified = true
+						Left = argList[0],
+						Right = argList[1],
+						Master = master
 					};
 
-					if (!Directory.Exists(sync.left)) throw new ArgumentException("Left path does not exist.");
-					if (!Directory.Exists(sync.right)) throw new ArgumentException("Right path does not exist.");
+					if (!Directory.Exists(sync.Left)) throw new ArgumentException("Left path does not exist.");
+					if (!Directory.Exists(sync.Right)) throw new ArgumentException("Right path does not exist.");
 
 					_argSync = sync;
 				}
@@ -230,26 +230,8 @@ namespace SyncDirCmd
 
 		private void LoadConfigFile()
 		{
-			var schemaFileName = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Config.xsd");
-			var xmlReaderSettings = new XmlReaderSettings();
-			xmlReaderSettings.Schemas.Add("SyncDirCmd.Config", schemaFileName);
-			xmlReaderSettings.ValidationType = ValidationType.Schema;
-
-			var fileStream = new FileStream(_configFile, FileMode.Open, FileAccess.Read);
-			try
-			{
-				using (var xmlReader = XmlReader.Create(fileStream, xmlReaderSettings))
-				{
-					fileStream = null;
-					var serializer = new XmlSerializer(typeof(Config));
-					_config = serializer.Deserialize(xmlReader) as Config;
-				}
-			}
-			catch (Exception ex)
-			{
-				if (fileStream != null) fileStream.Close();
-				throw ex;
-			}
+			var fileContent = File.ReadAllText(_configFile);
+			_config = JsonConvert.DeserializeObject<ConfigFile>(fileContent);
 		}
 
 		private static string _appDataDir;
@@ -311,64 +293,60 @@ namespace SyncDirCmd
 			_rep.WriteSummary(label, leftValue, rightValue);
 		}
 
-		private void StartSync(Database db, Sync sync)
+		private void StartSync(Database db, SyncDir sync)
 		{
 			try
 			{
-				string title;
-				if (!string.IsNullOrWhiteSpace(sync.name)) title = string.Format("Synchronizing directories ({0})", sync.name);
-				else title = "Synchronizing directories";
-
-				switch (sync.master)
+				switch (sync.Master)
 				{
-					case Master.left:
-						_rep.StartSection(string.Format("{0} -> {1}", sync.left, sync.right));
+					case Master.Left:
+						_rep.StartSection(string.Format("{0} -> {1}", sync.Left, sync.Right));
 
-						if (!Directory.Exists(sync.left))
+						if (!Directory.Exists(sync.Left))
 						{
-							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.Left));
 						}
-						else if (!Directory.Exists(sync.right))
+						else if (!Directory.Exists(sync.Right))
 						{
-							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.Right));
 						}
 						else
 						{
-							OneMaster(db, sync, sync.left, sync.right);
+							OneMaster(db, sync, sync.Left, sync.Right);
 						}
 						_rep.EndSection();
 						break;
-					case Master.right:
-						_rep.StartSection(string.Format("{0} <- {1}", sync.left, sync.right));
+					case Master.Right:
+						_rep.StartSection(string.Format("{0} <- {1}", sync.Left, sync.Right));
 
-						if (!Directory.Exists(sync.left))
+						if (!Directory.Exists(sync.Left))
 						{
-							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.Left));
 						}
-						else if (!Directory.Exists(sync.right))
+						else if (!Directory.Exists(sync.Right))
 						{
-							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.Right));
 						}
 						else
 						{
-							OneMaster(db, sync, sync.right, sync.left);
+							OneMaster(db, sync, sync.Right, sync.Left);
 						}
 						_rep.EndSection();
 						break;
-					case Master.both:
-						_rep.StartSection(string.Format("{0} <-> {1}", sync.left, sync.right));
+					case Master.Both:
+						_rep.StartSection(string.Format("{0} <-> {1}", sync.Left, sync.Right));
 
-						if (!Directory.Exists(sync.left))
+						if (!Directory.Exists(sync.Left))
 						{
-							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.left));
+							_rep.WriteError(string.Format("Folder on left does not exist: {0}", sync.Left));
 						}
-						else if (!Directory.Exists(sync.right))
+						else if (!Directory.Exists(sync.Right))
 						{
-							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.right));
+							_rep.WriteError(string.Format("Folder on right does not exist: {0}", sync.Right));
 						}
 						else
 						{
-							BothMaster(db, sync, sync.left, sync.right);
+							BothMaster(db, sync, sync.Left, sync.Right);
 						}
 						_rep.EndSection();
 						break;
@@ -380,7 +358,7 @@ namespace SyncDirCmd
 			}
 		}
 
-		private void OneMaster(Database db, Sync sync, string masterPath, string mirrorPath)
+		private void OneMaster(Database db, SyncDir sync, string masterPath, string mirrorPath)
 		{
 			using (var masterDb = new FileDb(db, masterPath))
 			using (var mirrorDb = new FileDb(db, mirrorPath))
@@ -549,7 +527,7 @@ namespace SyncDirCmd
 			}
 		}
 
-		private void BothMaster(Database db, Sync sync, string leftPath, string rightPath)
+		private void BothMaster(Database db, SyncDir sync, string leftPath, string rightPath)
 		{
 			using (var leftDb = new FileDb(db, leftPath))
 			using (var rightDb = new FileDb(db, rightPath))
@@ -908,10 +886,12 @@ namespace SyncDirCmd
 					case Direction.LeftToRight:
 						_rightStats.NumFilesDeleted++;
 						_rightStats.BytesDeleted += length;
+						_rightStats.BytesNet -= length;
 						break;
 					case Direction.RightToLeft:
 						_leftStats.NumFilesDeleted++;
 						_leftStats.BytesDeleted += length;
+						_leftStats.BytesNet -= length;
 						break;
 				}
 

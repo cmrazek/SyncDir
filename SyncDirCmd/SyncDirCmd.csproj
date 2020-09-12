@@ -45,6 +45,9 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
@@ -66,15 +69,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgumentException.cs" />
-    <Compile Include="Config.cs">
-      <DependentUpon>Config.xsd</DependentUpon>
-    </Compile>
+    <Compile Include="ConfigFile.cs" />
     <Compile Include="Cout.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Direction.cs" />
     <Compile Include="DirState.cs" />
     <Compile Include="FileDb.cs" />
     <Compile Include="FileEntry.cs" />
+    <Compile Include="Master.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReportDetail.cs" />
@@ -85,7 +87,7 @@
       <DependentUpon>Res.resx</DependentUpon>
     </Compile>
     <Compile Include="Stats.cs" />
-    <Compile Include="SyncEx.cs" />
+    <Compile Include="SyncDir.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -96,11 +98,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Config.xsd">
-      <SubType>Designer</SubType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Generate.bat" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

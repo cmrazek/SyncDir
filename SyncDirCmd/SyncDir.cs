@@ -1,23 +1,38 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SyncDirCmd
 {
-	public partial class Sync
+	public class SyncDir
 	{
 		private List<Regex> _ignoreRx;
+
+		[JsonProperty("left")]
+		public string Left { get; set; }
+
+		[JsonProperty("right")]
+		public string Right { get; set; }
+
+		[JsonProperty("master")]
+		[JsonConverter(typeof(MasterJsonConverter))]
+		public Master Master { get; set; }
+
+		[JsonProperty("ignore")]
+		public string[] Ignore { get; set; }
 
 		public bool IgnorePath(string path)
 		{
 			if (_ignoreRx == null)
 			{
 				_ignoreRx = new List<Regex>();
-				if (this.ignore != null)
+				if (Ignore != null)
 				{
-					foreach (var pattern in this.ignore)
+					foreach (var pattern in Ignore)
 					{
 						try
 						{
