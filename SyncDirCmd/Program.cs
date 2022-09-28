@@ -560,22 +560,14 @@ namespace SyncDirCmd
 					leftFiles = GetUnignoredFileNamesInDirectory(state, state.LeftAbsPath).ToArray();
 					leftDirs = GetUnignoredDirectoryNamesInDirectory(state, state.LeftAbsPath).ToArray();
 				}
-				else
-				{
-					leftFiles = new string[] { };
-					leftDirs = new string[] { };
-				}
+				else throw new DirectoryNotFoundException($"Directory '{state.LeftAbsPath}' no longer exists.");
 
 				if (Directory.Exists(state.RightAbsPath))
 				{
 					rightFiles = GetUnignoredFileNamesInDirectory(state, state.RightAbsPath).ToArray();
 					rightDirs = GetUnignoredDirectoryNamesInDirectory(state, state.RightAbsPath).ToArray();
 				}
-				else
-				{
-					rightFiles = new string[] { };
-					rightDirs = new string[] { };
-				}
+                else throw new DirectoryNotFoundException($"Directory '{state.RightAbsPath}' no longer exists.");
 
 				// Files that don't exist on right.
 				foreach (var fileName in leftFiles)

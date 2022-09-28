@@ -4,3 +4,4 @@
 /.vs/
 /SyncDirCmd/bin/*
 /SyncDirCmd/obj/*
+/packages/
