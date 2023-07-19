@@ -178,7 +178,7 @@ where base_path_id = @base_path_id and rel_path = @rel_path",
 
 			using (var cmd = CreateCommand(@"
 select rowid, rel_path from rel_file
-where base_path_id = @base_path_id and rel_path like '" + relDirName + "%'",
+where base_path_id = @base_path_id and rel_path like '" + SqlEncode(relDirName) + "%'",
 				"@base_path_id", basePathId))
 			using (var rdr = cmd.ExecuteReader())
 			{
@@ -211,6 +211,19 @@ where base_path_id = @base_path_id and rel_path like '" + relDirName + "%'",
 		public SQLiteTransaction BeginTransaction()
 		{
 			return _conn.BeginTransaction();
+		}
+
+		private string SqlEncode(string str)
+		{
+			var sb = new StringBuilder();
+
+			foreach (var ch in str)
+			{
+				if (ch == '\'') sb.Append("''");
+				else sb.Append(ch);
+			}
+
+			return sb.ToString();
 		}
 	}
 }
