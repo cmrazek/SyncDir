@@ -2,6 +2,7 @@
 *.user
 
 /.vs/
+/SyncDirCmd/.vs/*
 /SyncDirCmd/bin/*
 /SyncDirCmd/obj/*
 /packages/
